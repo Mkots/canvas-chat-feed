@@ -1,26 +1,7 @@
 import { UserMessageCell} from "./UserMessageCell";
-import { CustomRenderer, GridCellKind } from "@glideapps/glide-data-grid";
-
-
-export const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
-    const words = text.split(' ');
-    let line = '';
-    const lines = [];
-
-    for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        if (testWidth > maxWidth && n > 0) {
-            lines.push(line);
-            line = words[n] + ' ';
-        } else {
-            line = testLine;
-        }
-    }
-    lines.push(line);
-    return lines;
-};
+import {CustomRenderer, GridCellKind} from "@glideapps/glide-data-grid";
+import {ArgsCtxInjector} from "../utils/ArgsCtxInjector.ts";
+import {drawTextCellEjected} from "../utils/DrawTextCellEjected.ts";
 
 
 const UserMessageCellRenderer: CustomRenderer<UserMessageCell> = {
@@ -33,24 +14,25 @@ const UserMessageCellRenderer: CustomRenderer<UserMessageCell> = {
         ctx.save();
 
         // Draw name
-        ctx.font = `bold 14px ${theme.fontFamily}`;
-        ctx.fillStyle = theme.textLight;
-        ctx.textAlign = "left";
-        const nameY = rect.y + 20;
-        ctx.fillText(name, rect.x + theme.cellHorizontalPadding, nameY);
+        const nameRect = {...rect, y: rect.y - 45}
+        drawTextCellEjected(
+            ArgsCtxInjector(args, {font:`bold 14px ${theme.fontFamily}`, fillStyle: theme.textDark }, nameRect),
+            name,
+            "left",
+            false,
+            false)
+        
+        console.log('|>', nameRect);
 
         // Draw message
-        ctx.font = `normal 12px ${theme.fontFamily}`;
-        ctx.fillStyle = theme.textMedium;
-        const maxWidth = rect.width - theme.cellHorizontalPadding * 2;
-        const messageLines = wrapText(ctx, message, maxWidth);
-        let messageY = nameY + 20;
-
-        messageLines.forEach(line => {
-            ctx.fillText(line, rect.x + theme.cellHorizontalPadding, messageY);
-            messageY += 14; // Line height
-        });
-
+        const messageRect = {...rect, height: rect.height + 0}
+        drawTextCellEjected(
+            ArgsCtxInjector(args, {font:`normal 12px ${theme.fontFamily}`, fillStyle: theme.textMedium}, messageRect),
+            message,
+            "left",
+            true,
+            true)
+        console.log('|>', messageRect);
         ctx.restore();
 
         return true;
@@ -63,20 +45,14 @@ const UserMessageCellRenderer: CustomRenderer<UserMessageCell> = {
             message: v,
         };
     },
-    // measure: (ctx, cell, theme) => {
-    //     const { name, message } = cell.data;
-
-    //     ctx.font = `bold 14px ${theme.fontFamily}`;
-    //     const nameHeight = measureTextCached(name, ctx).emHeightAscent * 2;
-
-    //     ctx.font = `normal 12px ${theme.fontFamily}`;
-    //     const maxWidth = 300; 
-    //     const messageLines = wrapText(ctx, message, maxWidth);
-    //     const messageHeight = messageLines.length * 14; 
-
-    //     const padding = 10;
-    //     return nameHeight + messageHeight + padding;
-    // }
+    measure: (ctx, cell, t) => {
+        const lines = cell.data.displayData.split("\n", cell.data.allowWrapping === true ? undefined : 1);
+        let maxLineWidth = 0;
+        for (const line of lines) {
+            maxLineWidth = Math.max(maxLineWidth, ctx.measureText(line).width);
+        }
+        return maxLineWidth + 2 * t.cellHorizontalPadding;
+    }
 
 };
 

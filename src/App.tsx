@@ -3,14 +3,11 @@ import {
   GridCellKind,
   GridColumn,
   Item,
-  measureTextCached,
 } from "@glideapps/glide-data-grid";
 import { faker } from "@faker-js/faker";
 import "@glideapps/glide-data-grid/dist/index.css";
 import { BeautifulWrapper } from "./BeautifulWrapper";
-import UserMessageCellRenderer, {
-  wrapText,
-} from "./UserMessage/UserMessageCellRenderer";
+import UserMessageCellRenderer from "./UserMessage/UserMessageCellRenderer";
 import { UserMessageCell } from "./UserMessage/UserMessageCell";
 
 const WIDTH = 210;
@@ -39,6 +36,9 @@ function getData([col, row]: Item): UserMessageCell {
         kind: "user_message",
         name: `${person?.firstName} ${person?.lastName}`,
         message: person?.message ? person.message : "No message",
+        displayData: `${person?.firstName} ${person?.lastName}
+        ${person?.message}`,
+        allowWrapping: true,
       },
       allowOverlay: false,
       copyData: `${person?.firstName} ${person?.lastName} ${person?.message}`,
@@ -48,25 +48,6 @@ function getData([col, row]: Item): UserMessageCell {
   }
 }
 
-const getRowHeight = (row: number) => {
-  const cell = getData([0, row]) as UserMessageCell;
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.font = `bold 14px Arial`;
-    const nameHeight =
-      measureTextCached(cell.data.name, ctx).emHeightAscent * 2;
-
-    ctx.font = `normal 12px Arial`;
-    const maxWidth = WIDTH;
-    const messageLines = wrapText(ctx, cell.data.message, maxWidth);
-    const messageHeight = (messageLines.length + 1) * 24; // Line height
-
-    const padding = 10;
-    return nameHeight + messageHeight + padding;
-  }
-  return 40;
-};
 
 const App = () => {
   const numRows = data.length;
@@ -78,8 +59,8 @@ const App = () => {
         columns={columns}
         rows={numRows}
         customRenderers={[UserMessageCellRenderer]}
-        rowHeight={getRowHeight}
-        getCellsForSelection={true} 
+        getCellsForSelection={true}
+        rowHeight={(n) => 100}
       />
     </BeautifulWrapper>
   );
